@@ -100,7 +100,6 @@ class Trainer:
                 action = [ag.get_action(obs[i], epsilon) for i, ag in enumerate(self.agent)]
             nobs, reward, done, cf = self.env.step(np.array(action,dtype='int16'))
             cfcnt += cf
-            #print('reward here is: ',reward)
             total_reward += reward.sum()
             
             if done:
@@ -149,7 +148,7 @@ class Trainer:
             total_reward, ave_loss, cfcnt = self._episode(epsilon=epsilon,
                 do_train=True, do_memorize=True, record_path=path)
 
-            print('total reward: {:.2f}, average loss: {:.4f}'.format(total_reward, ave_loss))
+            print('total reward: {:.2f}, average loss: {:.4f}, conflict: {:d}'.format(total_reward, ave_loss, cfcnt))
             self.train_logger.log(e, total_reward, ave_loss, cfcnt)
             if self.hyperdash is not None:
                 self.hyperdash.metric("train_reward", total_reward, log=False)
