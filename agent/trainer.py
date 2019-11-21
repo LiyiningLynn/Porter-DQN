@@ -11,10 +11,10 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 class Logger:
     def __init__(self, path):
         self.log_fp = open(path, 'w')
-        self.log_fp.write('episode,reward,loss\n')
+        self.log_fp.write('episode,reward,loss,conflict\n')
 
-    def log(self, episode, reward, loss):
-        self.log_fp.write('{:d},{:.6f},{:.6f}\n'.format(episode, reward, loss))
+    def log(self, episode, reward, loss, cfcnt):
+        self.log_fp.write('{:d},{:.6f},{:.6f},{:d}\n'.format(episode, reward, loss, cfcnt))
 
 class Trainer:
     def __init__(self, name, env, agent, episodes, steps,
@@ -81,6 +81,8 @@ class Trainer:
             obs = self.preprocess(obs)
 
         # I don't record task.log and agent.log TEMPORILY
+        # Now I do it
+        # 2019-11-21 only record conflict, same as previous exp
         # if record_path != "":
         #     self.recorder.begin_episode(record_path)
         #     self.recorder.record(self.env.render())
@@ -89,13 +91,15 @@ class Trainer:
         total_loss = 0.0
         train_cnt = 0
         ave_loss=0
+        cfcnt = 0
         for s in range(self.steps):
             if self.is_centralized:
                 action = self.agent.get_action(obs, epsilon)
             else:
                 # obs[i] should be a dict
                 action = [ag.get_action(obs[i], epsilon) for i, ag in enumerate(self.agent)]
-            nobs, reward, done = self.env.step(np.array(action,dtype='int16'))
+            nobs, reward, done, cf = self.env.step(np.array(action,dtype='int16'))
+            cfcnt += cf
             #print('reward here is: ',reward)
             total_reward += reward.sum()
             
@@ -114,10 +118,15 @@ class Trainer:
                     train_cnt += 1
 
             obs = nobs
+        #     if record_path != "":
+        #         self.recorder.record(self.env.render())
+        # if record_path != "":
+        #     self.recorder.end_episode()
+            
         ave_loss = total_loss / train_cnt if train_cnt > 0 else 0
         print("eps: {}".format(str(epsilon)))
         print('total rewar: ', total_reward)
-        return total_reward, ave_loss
+        return total_reward, ave_loss, cfcnt
 
     def train(self):
         # Run agents with random actions to collect experiences
@@ -137,11 +146,11 @@ class Trainer:
 
             path = self.train_record_path + '/episode{:05d}'.format(e + 1) \
                 if (e + 1) % self.record_every == 0 else ""
-            total_reward, ave_loss = self._episode(epsilon=epsilon,
+            total_reward, ave_loss, cfcnt = self._episode(epsilon=epsilon,
                 do_train=True, do_memorize=True, record_path=path)
 
             print('total reward: {:.2f}, average loss: {:.4f}'.format(total_reward, ave_loss))
-            self.train_logger.log(e, total_reward, ave_loss)
+            self.train_logger.log(e, total_reward, ave_loss, cfcnt)
             if self.hyperdash is not None:
                 self.hyperdash.metric("train_reward", total_reward, log=False)
             
