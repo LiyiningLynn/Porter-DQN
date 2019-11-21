@@ -76,7 +76,7 @@ class Gameboard(object):
                 self.agent_state[y,x] = 1
             else:
                 self.task_state[y,x] = 1
-                self.task_update.append([self.step_cnt,-1,-1,-1,y,x])
+                self.task_update.append([self.step_cnt,-1,y,x])
         return self._get_observation()
 
     def step(self, action):
@@ -123,15 +123,17 @@ class Gameboard(object):
             if self.task_remain < 0.01:
                 print('you fool ! task_num is:' , self.task_remain)
                 done = True
-            for i,y,x in task_finished:
-                self.task_update.append([self.step_cnt,i,y,x])
+        for i,y,x in task_finished:
+            self.task_update.append([self.step_cnt,i,y,x])
         if self.que:
             i = self.que.pop(0)
             self.reward[i] = 1.0 * self.task_carry[i]
             self.task_remain -= self.task_carry[i]
             self.task_carry[i] = 0
             print('score +++1 !!')
-        return np.array(self._get_observation()), np.array(self.reward, dtype=np.float64), done
+        
+        cfcnt = len(self.que)
+        return np.array(self._get_observation()), np.array(self.reward, dtype=np.float64), done, cfcnt
 
     def render(self, mode='log'):
         ret = None
@@ -143,8 +145,9 @@ class Gameboard(object):
                     self.agent_pos[i][0],
                     self.agent_pos[i][1],
                     self.action[i],
-                    self.reward[i]] for i in range(self.agent_num)],
-                    'task': self.task_update
+                    self.reward[i]
+                    ] for i in range(self.agent_num)],
+                    'task': list(self.task_update)
             }
             self.task_update.clear()
         elif mode == 'state':
