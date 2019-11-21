@@ -11,7 +11,7 @@ from env.util import GameboardRecorder
 from agent.my_dqn import SimpleDQN
 
 
-name = 'icaart_v0'
+name = 'paams0'
 exp = Experiment(name)
 
 agent_num = 6
