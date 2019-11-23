@@ -130,7 +130,7 @@ class Gameboard(object):
             self.reward[i] = 1.0 * self.task_carry[i]
             self.task_remain -= self.task_carry[i]
             self.task_carry[i] = 0
-            print('score +++1 !!')
+            #print('score +++1 !!')
         
         cfcnt = len(self.que)
         return np.array(self._get_observation()), np.array(self.reward, dtype=np.float64), done, cfcnt
@@ -183,38 +183,18 @@ class Gameboard(object):
             obs['local']  = obs_local
 
             gobs.append(obs) # a list of dict
-        # obs_global = np.zeros((self.agent_num * itvg, self.height, self.width))#(6*3,20,20)
-        # obs_local = np.zeros((self.agent_num * itvl, 2*self.view+1, 2*self.view+1))#(6*1,9,9)
-    
-        # for agent_id in range(self.agent_num):
-        #     obs = {}#single obs
-        #     if self.task_carry[agent_id]:
-        #         #ignore task
-        #         obs_global[agent_id * itvg, self.agent_pos[agent_id][0], self.agent_pos[agent_id][1]] = 1
-        #         obs_global[agent_id * itvg + 1, self.height//2, self.width//2] = 1
-        #         obs_global[agent_id * itvg + 2] = self.agent_state
-        #         obs_global[agent_id * itvg + 2, self.agent_pos[agent_id][0], self.agent_pos[agent_id][1]] = 0
-        #     else:
-        #         # ignore Goal
-        #         obs_local[agent_id * itvl] = self._get_local(self.task_state, self.agent_pos[agent_id])
-        #         obs_global[agent_id * itvg, self.agent_pos[agent_id][0], self.agent_pos[agent_id][1]] = 1
-        #         obs_global[agent_id * itvg + 2] = self.agent_state
-        #         obs_global[agent_id * itvg + 2, self.agent_pos[agent_id][0], self.agent_pos[agent_id][1]] = 0
-        # obs_local = obs_local.reshape((self.agent_num,)+self.observation_space_local)
-        # obs_global= obs_global.reshape((self.agent_num,)+self.observation_space)
-        # obs['local'] = obs_local
-        # obs['global']= obs_global
-        #a = [np.reshape(obs[:4], self.observation_space), np.reshape(obs[4:], self.observation_space)]
         return gobs
 
     def _get_local(self, state, pos):
         y = pos[0]
-        x = pos[1]
-        local = np.zeros((2*self.view+1,2*self.view+1))
-        low_y = max([0,y-self.view])
-        high_y= min([self.height,y+self.view+1])
-        low_x = max([0,x-self.view])
-        high_x= min([self.height,x+self.view+1])
+        x = pos[1]#x,y absolute position
+        local = np.zeros((2*self.view+1, 2*self.view+1))
+
+        low_y = max([0, y-self.view])
+        high_y= min([self.height, y+self.view+1])
+        low_x = max([0, x-self.view])
+        high_x= min([self.height, x+self.view+1])
+
         local[:high_y-low_y,:high_x-low_x] = state[low_y:high_y, low_x:high_x].copy()
         local = local.reshape(self.observation_space_local)
         return local
