@@ -93,12 +93,27 @@ class Gameboard(object):
         action_order = np.arange(self.agent_num)
         np.random.shuffle(action_order)
         for i in action_order:
+            # 入队
             if (list(self.agent_pos[i]) in self.wz) \
-                and (action[i]==self.wz.index(list(self.agent_pos[i]))) \
-                and (self.task_carry[i]>0):
-                self.reward[i] = -0.005
+            and (action[i]==self.wz.index(list(self.agent_pos[i]))) \
+            and (self.task_carry[i]>0):
+                self.reward[i] = -0.005 #one of them will be added 0.005 later
+                if i not in self.que:
+                    self.que.append(i)
                 continue
-            # update agent position and agent_state
+            # 不等了,出队
+            elif (list(self.agent_pos[i]) in self.wz) \
+            and (i in self.que) \
+            and (action[i]!=self.wz.index(list(self.agent_pos[i]))):
+                self.que.remove(i)
+            # 避开洞
+            elif (list(self.agent_pos[i]) in self.wz) \
+            and (action[i]==self.wz.index(list(self.agent_pos[i]))) \
+            and (self.task_carry[i]<=0):
+                #self.reward[i] = -0.001 #取消撞墙惩罚
+                action[i] = 3 - action[i] #更换移动方向,避免撞墙
+
+            # update agent_pos and agent_state
             npos = self.agent_pos[i] + self.move_map[action[i]]
             if not npos[0]<0 and not npos[0]>=self.height \
                 and not npos[1]<0  and not npos[1]>=self.width \
@@ -108,12 +123,12 @@ class Gameboard(object):
                 self.agent_state[npos[0],npos[1]] = 1
             else:
                 self.agent_state[self.agent_pos[i][0], self.agent_pos[i][1]] = 1
-                self.reward[i] = -0.001
+                self.reward[i] = -0.001 # beyond border punishment
 
-            y,x = self.agent_pos[i]
-            if (list(self.agent_pos[i]) in self.wz) and (self.task_carry[i]>0):
-                #if sum(self.agent_state[z[0],z[1]] for z in self.wz if z!=self.agent_pos[i])==0 :
-                self.que.append(i)
+            y,x = self.agent_pos[i] #更新后
+
+            # if (list(self.agent_pos[i]) in self.wz) and (self.task_carry[i]>0): 
+            #     self.que.append(i)
             if self.task_state[y, x]:
                 if self.task_carry[i] < self.LIMIT:
                     self.reward[i] = 0.05
@@ -127,7 +142,7 @@ class Gameboard(object):
             self.task_update.append([self.step_cnt,i,y,x])
         if self.que:
             i = self.que.pop(0)
-            self.reward[i] = 1.0 * self.task_carry[i]
+            self.reward[i] = 1.0 * self.task_carry[i] + 0.005#only punish other waiting agents
             self.task_remain -= self.task_carry[i]
             self.task_carry[i] = 0
             #print('score +++1 !!')
@@ -199,6 +214,8 @@ class Gameboard(object):
         local = local.reshape(self.observation_space_local)
         return local
 
-
+    def get_finished(self):
+        return self.task_num - self.task_remain
+        
     def seed(self, seed=0):
         np.random.seed(seed=seed)
