@@ -7,3 +7,4 @@ lab research
 
 **11-21**
 + add conflict count, its definitino is shown in slides
++ add task finished log
